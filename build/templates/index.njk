@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{ appName }}</title>
+        <style>
+            video {
+                width: calc(100vw - 16px);
+                height: auto;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="app">
+            <h1>{{ msg }}</h1>
+            {{ query }}
+        </div>
+        <script>
+            fetch(`./api/video?videoID=${encodeURI('https://youtu.be/UTHgr6NLeEw')}`)
+            .then(response => {
+                const reader = response.body.getReader();
+                const contentLength = parseInt(response.headers.get('Content-Length'));
+                let received = 0;
+                const progress = document.querySelector('#progress');
+                return new ReadableStream({
+                    start(controller) {
+                        return (function pump() {
+                            return reader.read().then(({ done, value }) => {
+                                if (done) {
+                                    controller.close();
+                                    return;
+                                }
+
+                                controller.enqueue(value);
+                                received += value.length;
+
+                                progress.textContent = `${((received / contentLength) * 100).toFixed(2)}%`;
+                                return pump();
+                            });
+                        })();
+                    }
+                });
+            })
+            .then(stream => new Response(stream))
+            .then(response => response.blob())
+            .then(blob => URL.createObjectURL(blob))
+            .then(url => {
+                const video = document.querySelector('#video');
+                video.src = url;
+                video.onloadeddata = () => {
+                    video.play();
+                };
+            })
+            .catch(error => console.error(error));
+        </script>
+        <p id="progress"></p>
+        <video id="video" controls muted></video>
+    </body>
+</html>
