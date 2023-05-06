@@ -1,14 +1,20 @@
 import express from 'express';
-import { Proxy } from 'src/common/middleware';
 import Video from './Video';
 import VideoInfo from './VideoInfo';
-import ImageProxy from './ImageProxy';
+import bodyParser from "body-parser";
+import ValidateURL from './ValidateURL';
+
+import * as crypto from 'crypto';
+import { sign, verify } from 'src/common/crypto';
+import Authentication from './Authentication';
+
+const jsonParser = bodyParser.json({limit: '1000kb'});
 
 export const APIRouter = express.Router();
 
-APIRouter.use(Proxy);
-APIRouter.get('/proxy/image', ImageProxy);
-APIRouter.get('/video', Video);
+APIRouter.use(Authentication);
+APIRouter.post('/video', jsonParser, Video);
 APIRouter.get('/video/info', VideoInfo);
+APIRouter.get('/video/validate', ValidateURL);
 
 export default APIRouter;
